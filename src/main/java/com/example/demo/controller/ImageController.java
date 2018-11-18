@@ -16,28 +16,11 @@ public class ImageController {
 
     private final ValidationService validationService;
     private final ParsingService parsingService;
-    public static final String IMAGES_DIR = System.getProperty("user.home") + File.separator + "Documents" + File.separator + "hackathonImages";
+
+    private static final String IMAGES_DIR = System.getProperty("user.home") + File.separator + "Documents" + File.separator + "hackathonImages";
 
     @ResponseBody
     @RequestMapping(value = "/uploadImage", method = RequestMethod.POST, consumes = MediaType.ALL_VALUE, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
-    public String uploadImage(@RequestBody String imageValue) throws IOException {
-        //This will decode the String which is encoded by using Base64 class
-        byte[] imageByte = Base64.decodeBase64(imageValue);
-
-        String path = System.getProperty("user.home") + File.separator + "Documents" + File.separator + "hackathonImages";
-        File hackathonImagesDirectory = getImagesDir(path);
-        File imagefile = new File(hackathonImagesDirectory, "Image_" + DateTime.now().getMillis() + ".jpg");
-
-        FileOutputStream fileOutputStream = new FileOutputStream(imagefile);
-        fileOutputStream.write(imageByte);
-        fileOutputStream.close();
-
-        System.out.println("Created file: " + imagefile.toString());
-        return "success ";
-    }
-
-    @ResponseBody
-    @RequestMapping(value = "/uploadImage2", method = RequestMethod.POST, consumes = MediaType.ALL_VALUE, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
     public String uploadImage2(@RequestBody String imageAsString) throws IOException {
         String[] strings = imageAsString.split(",");
         String header = strings[0];
@@ -50,6 +33,9 @@ public class ImageController {
         }
         String successMessage = "Created file: " + imagefile.toString();
         System.out.println(successMessage);
+
+        parsingService.parseFile(imagefile);
+
         return successMessage;
     }
 
