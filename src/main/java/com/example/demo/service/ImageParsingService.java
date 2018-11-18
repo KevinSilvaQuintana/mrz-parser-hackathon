@@ -108,7 +108,8 @@ public class ImageParsingService {
                 }
                 System.out.println("\nComplete annotation:");
                 String parsedText = annotation.getText();
-                System.out.println("BEFORE: " + parsedText);
+                System.out.println("BEFORE: ");
+                System.out.println(parsedText);
                 String[] split = parsedText.split("\n");
                 // wrong MRZ
                 if(split.length != 2) {
@@ -117,7 +118,8 @@ public class ImageParsingService {
                 String firstPart = fixSpacingIssues(0, split);
                 String secondPart = fixSpacingIssues(1, split);
                 String fixedMrz = firstPart + "\n" + secondPart;
-                System.out.println("AFTER: " + fixedMrz);
+                System.out.println("AFTER: ");
+                System.out.println(fixedMrz);
                 return new ParsingResult(totalConfidence, fixedMrz);
             }
         }
