@@ -2,8 +2,10 @@ package com.example.demo.model;
 
 public class ParsedMrzInfo {
 
-    // the first line of machine readable
     public final String mrzCode;
+    public float confidence;
+
+    // the first line of machine readable
     public final String docType;  // P indicating a passport,  Position 1
     public final String issuingCountry;
     public final String familyName;
@@ -31,10 +33,15 @@ public class ParsedMrzInfo {
         this.personalNumber = personalNumber;
     }
 
+    public void setConfidence(float confidence) {
+        this.confidence = confidence;
+    }
+
     @Override
     public String toString() {
         return "ParsedMrzInfo{" +
                 "mrzCode='" + mrzCode + '\'' +
+                ", confidence=" + confidence +
                 ", docType='" + docType + '\'' +
                 ", issuingCountry='" + issuingCountry + '\'' +
                 ", familyName='" + familyName + '\'' +

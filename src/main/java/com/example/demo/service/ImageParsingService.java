@@ -1,12 +1,13 @@
 package com.example.demo.service;
 
+import com.example.demo.model.ParsingResult;
 import com.google.cloud.vision.v1.*;
 import com.google.protobuf.ByteString;
+import org.joda.time.DateTime;
 import org.springframework.stereotype.Service;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
+import javax.xml.bind.DatatypeConverter;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -14,9 +15,40 @@ import java.util.List;
 //TODO: apply filter to image.
 //TODO: if confidence is below threshold, highlight it in red.
 @Service
-public class ParsingService {
+public class ImageParsingService {
 
-    public static String parseFile(File file) throws IOException {
+    private static final String IMAGES_DIR = System.getProperty("user.home") + File.separator + "Documents" + File.separator + "hackathonImages";
+    public static final ParsingResult BAD_PARSING_RESULT = new ParsingResult(0, null);
+
+    public ParsingResult parseImageFromBase64String(String imageAsBase64) throws IOException {
+        String[] strings = imageAsBase64.split(",");
+        String header = strings[0];
+        File imagefile = new File(getImagesDir(IMAGES_DIR), "Image_" + DateTime.now().getMillis() + "." + getFileExtension(header));
+
+        //convert base64 string to binary data
+        byte[] data = DatatypeConverter.parseBase64Binary(strings[1]);
+        try (OutputStream outputStream = new BufferedOutputStream(new FileOutputStream(imagefile))) {
+            outputStream.write(data);
+        }
+        String successMessage = "Created file: " + imagefile.toString();
+        System.out.println(successMessage);
+
+        return callGoogleCloudImageParsing(imagefile);
+    }
+
+    private File getImagesDir(String path) {
+        File hackathonImagesDirectory = new File(path);
+        if (hackathonImagesDirectory.exists()) {
+            System.out.println(hackathonImagesDirectory + " already exists");
+        } else if (hackathonImagesDirectory.mkdirs()) {
+            System.out.println(hackathonImagesDirectory + " was created");
+        } else {
+            System.out.println(hackathonImagesDirectory + " was not created");
+        }
+        return hackathonImagesDirectory;
+    }
+
+    public ParsingResult callGoogleCloudImageParsing(File file) throws IOException {
         List<AnnotateImageRequest> requests = new ArrayList<>();
 
         ByteString imgBytes = ByteString.readFrom(new FileInputStream(file));
@@ -44,6 +76,8 @@ public class ParsingService {
                     return null;
                 }
 
+                float totalConfidence = 0;
+
                 // For full list of available annotations, see http://g.co/cloud/vision/docs
                 TextAnnotation annotation = res.getFullTextAnnotation();
                 for (Page page : annotation.getPagesList()) {
@@ -67,15 +101,47 @@ public class ParsingService {
                             System.out.println("\nParagraph: \n" + paraText);
                             System.out.format("Paragraph Confidence: %f\n", para.getConfidence());
                             blockText = blockText + paraText;
+                            totalConfidence = para.getConfidence();
                         }
                         pageText = pageText + blockText;
                     }
                 }
                 System.out.println("\nComplete annotation:");
-                System.out.println(annotation.getText());
-                return annotation.getText();
+                String parsedText = annotation.getText();
+                System.out.println("BEFORE: " + parsedText);
+                String[] split = parsedText.split("\n");
+                // wrong MRZ
+                if(split.length != 2) {
+                    return BAD_PARSING_RESULT;
+                }
+                String firstPart = fixSpacingIssues(0, split);
+                String secondPart = fixSpacingIssues(1, split);
+                String fixedMrz = firstPart + "\n" + secondPart;
+                System.out.println("AFTER: " + fixedMrz);
+                return new ParsingResult(totalConfidence, fixedMrz);
             }
         }
-        return null;
+        return BAD_PARSING_RESULT;
+    }
+
+    private String fixSpacingIssues(int i, String[] split) {
+        return (split[i].length() <= 44) ? split[i].replace(" ", "<") : split[i].replace(" ", "");
+    }
+
+    private String getFileExtension(String header) {
+        String extension;
+        //check image's extension
+        switch (header) {
+            case "data:image/jpeg;base64":
+                extension = "jpeg";
+                break;
+            case "data:image/png;base64":
+                extension = "png";
+                break;
+            default://should write cases for more images types
+                extension = "jpg";
+                break;
+        }
+        return extension;
     }
 }
