@@ -117,6 +117,7 @@ public class ImageParsingService {
                 }
                 String firstPart = fixSpacingIssues(0, split);
                 String secondPart = fixSpacingIssues(1, split);
+                secondPart = secondPart.replace("O", "0");
                 String fixedMrz = firstPart + "\n" + secondPart;
                 System.out.println("AFTER: ");
                 System.out.println(fixedMrz);
